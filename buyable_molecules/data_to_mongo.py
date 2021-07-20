@@ -130,6 +130,7 @@ def split_dfs(df, split=10):
 
 if __name__ == '__main__':
     db.connect('molecules')
+    '''
     BuildingBlock.drop_collection()
 
     df = pd.read_csv('final.csv', index_col=0)
@@ -143,4 +144,16 @@ if __name__ == '__main__':
         data_to_mongo(df)
         del df
         gc.collect()
+    '''
+    t0 = time.time()
+    bb = BuildingBlock.objects(db.Q(smiles='CO') & db.Q(vendors='mcule_bb'))
+    #bb = BuildingBlock.objects(mcule_id='MCULE-1370061678')
+
+    print(len(bb))
+
+    print(bb[0].mcule_id)
+    t1 = time.time()
+    print(round(t1 - t0, 3))
+
+
 

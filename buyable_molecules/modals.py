@@ -12,6 +12,8 @@ class BuildingBlock(db.DynamicDocument):
 
     vendors = db.ListField(db.StringField())
 
+    meta = {'indexes': ['smiles']}
+
 
 
 
