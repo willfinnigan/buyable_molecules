@@ -6,6 +6,10 @@ class BuildingBlock(db.DynamicDocument):
     index = db.StringField()
     fingerprints = db.DictField()
     mcule_id = db.StringField()
+    sigma_id = db.StringField()
+    molport_id = db.StringField()
+    zinc_id = db.StringField()
+
     vendors = db.ListField(db.StringField())
 
 

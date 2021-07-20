@@ -43,11 +43,13 @@ def load_mol_columns(df):
     df['inchi_key'] = df['mol'].apply(get_inchi_key)
     df = df.dropna(subset=['inchi_key'])
 
+    df = df.where(pd.notnull(df), None)
+
     return df
 
-def df_to_collection(df, collection):
+def df_to_collection(df):
 
-    operations = []
+    to_insert = []
 
     for index, row in df.iterrows():
         smi = row['SMILES']
@@ -76,59 +78,69 @@ def df_to_collection(df, collection):
         else:
             molport_id = None
 
-        try:
-            inchi_key = row['inchi_key']
-            mol_binary = row['inchi_key']
+        inchi_key = row['inchi_key']
+        mol_binary = row['rdmol']
 
-            op = UpdateOne({"index": inchi_key},
-                           {"$set": {'smiles': smi,
-                                     'index': inchi_key,
-                                     'fingerprints': {},
-                                     'rdmol': mol_binary,
-                                     'vendors': vendors,
-                                     'mcule_id': mcule_id,
-                                     'sigma_id': sigma_id,
-                                     'molport_id': molport_id,
-                                     'zinc_id': zinc_id}}
-                           )
-            operations.append(op)
-        except:
-            print(f"Couldn't load smi {smi}")
+        bb = BuildingBlock(smiles=smi,
+                           index=inchi_key,
+                           fingerprints={},
+                           rdmol=mol_binary,
+                           vendors=vendors,
+                           mcule_id=mcule_id,
+                           sigma_id=sigma_id,
+                           molport_id=molport_id,
+                           zinc_id=zinc_id)
+        to_insert.append(bb)
 
-    collection.bulk_write(operations)
-    operations = None
+        """op = UpdateOne({"index": inchi_key},
+                       {"$set": {'smiles': smi,
+                                 'index': inchi_key,
+                                 'fingerprints': {},
+                                 'rdmol': mol_binary,
+                                 'vendors': vendors,
+                                 'mcule_id': mcule_id,
+                                 'sigma_id': sigma_id,
+                                 'molport_id': molport_id,
+                                 'zinc_id': zinc_id}}
+                       )
+        operations.append(op)"""
+
+    #collection.bulk_write(operations)
+    #operations = None
+    BuildingBlock.objects.insert(to_insert)
+    to_insert = None
+    bb = None
+    gc.collect()
     return
 
+def data_to_mongo(df):
 
-def data_to_mongo(df, chunk_size, collection):
-    total_length = len(df.index)
-    num_splits = int(total_length / chunk_size)
+    t0 = time.time()
+    df = load_mol_columns(df)
+    df_to_collection(df)
+    print(f"Time for df = {round(time.time() - t0, 1)} seconds")
 
-    split_dfs = np.array_split(df, num_splits)
-    print(f"Split df into {num_splits} chunks")
-    del df
-    gc.collect()
+def split_dfs(df, split=10):
+    split_dfs = np.array_split(df, split)
 
     for i, s_df in enumerate(split_dfs):
-        print(f"Processing data chunk {i} of {num_splits}")
-        t0 = time.time()
-        s_df = load_mol_columns(s_df)
-        df_to_collection(s_df, collection)
-        del s_df
-        gc.collect()
-        print(f"Time for chunk = {round(time.time() - t0, 1)} seconds")
+        s_df.to_csv(f'final_split/split_{i}.csv')
+
+    return
 
 if __name__ == '__main__':
     db.connect('molecules')
     BuildingBlock.drop_collection()
 
-    client = pymongo.MongoClient('0.0.0.0', 27017)
-    database = client['molecules']
-    collection = database['building_block']
-
     df = pd.read_csv('final.csv', index_col=0)
-    data_to_mongo(df, 10000, collection)
+    split=10
+    split_dfs(df)
+    del df
+    gc.collect()
 
-    test_mol = BuildingBlock.objects()[0].to_json()
-    print(test_mol)
+    for i in range(split):
+        df = pd.read_csv(f"final_split/split_{i}.csv")
+        data_to_mongo(df)
+        del df
+        gc.collect()
 
