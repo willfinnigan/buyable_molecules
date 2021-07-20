@@ -1,53 +1,16 @@
 import mongoengine as db
-from buyable_molecules.modals import BuildingBlock
-import pandas as pd
 import numpy as np
 import gc
-
-import urllib.request
-from pathlib import Path
-import gzip
-import shutil
-import os
 import time
+from pathlib import Path
+from buyable_molecules.modals import BuildingBlock
+from buyable_molecules.rdkit_pandas_functions import load_mol_columns
+import pandas as pd
 import pymongo
-from pymongo import UpdateOne
-from rdkit import Chem
-from bson import Binary
 
+final_building_block_df_path = str(Path(__file__).parents[0]) + '/building_block_dfs/final/final.csv'
 
-def create_mol_col(smi):
-    try:
-        return Chem.MolFromSmiles(smi)
-    except:
-        print(f'error with smi {smi}')
-        return None
-
-def mol_binary(mol):
-    try:
-        return Binary(mol.ToBinary())
-    except:
-        return None
-
-def get_inchi_key(mol):
-    try:
-        return Chem.MolToInchiKey(mol)
-    except:
-        return None
-
-def load_mol_columns(df):
-    df['mol'] = df['SMILES'].apply(create_mol_col)
-    df = df.dropna(subset=['mol'])
-    df['rdmol'] = df['mol'].apply(mol_binary)
-    df = df.dropna(subset=['rdmol'])
-    df['inchi_key'] = df['mol'].apply(get_inchi_key)
-    df = df.dropna(subset=['inchi_key'])
-
-    df = df.where(pd.notnull(df), None)
-
-    return df
-
-def df_to_collection(df):
+def df_to_collection_via_mongoengine(df):
 
     to_insert = []
 
@@ -113,11 +76,64 @@ def df_to_collection(df):
     gc.collect()
     return
 
+def df_to_collection_via_pymongo(df, collection):
+
+    operations = []
+
+    for index, row in df.iterrows():
+        smi = row['SMILES']
+        vendors = []
+        if row['mcule_id'] != None:
+            mcule_id = str(row['mcule_id'])
+            vendors.append('mcule_bb')
+        else:
+            mcule_id = None
+
+        if row['sigma_id'] != None:
+            sigma_id = str(row['sigma_id'])
+            vendors.append('sigma_bb')
+        else:
+            sigma_id = None
+
+        if row['zinc_id'] != None:
+            zinc_id = str(row['zinc_id'])
+            vendors.append('zinc_bb_in_stock')
+        else:
+            zinc_id= None
+
+        if row['molport_id'] != None:
+            molport_id = str(row['molport_id'])
+            vendors.append('molport_bb')
+        else:
+            molport_id = None
+
+        inchi_key = row['inchi_key']
+        mol_binary = row['rdmol']
+
+        op = pymongo.UpdateOne({"index": inchi_key},
+                               {"$set": {'smiles': smi,
+                                         'index': inchi_key,
+                                         'fingerprints': {},
+                                         'rdmol': mol_binary,
+                                         'vendors': vendors,
+                                         'mcule_id': mcule_id,
+                                         'sigma_id': sigma_id,
+                                         'molport_id': molport_id,
+                                         'zinc_id': zinc_id}}
+                               )
+        operations.append(op)
+
+    collection.bulk_write(operations)
+    operations = None
+    op = None
+    gc.collect()
+    return
+
 def data_to_mongo(df):
 
     t0 = time.time()
     df = load_mol_columns(df)
-    df_to_collection(df)
+    df_to_collection_via_mongoengine(df)
     print(f"Time for df = {round(time.time() - t0, 1)} seconds")
 
 def split_dfs(df, split=10):
@@ -127,6 +143,11 @@ def split_dfs(df, split=10):
         s_df.to_csv(f'final_split/split_{i}.csv')
 
     return
+
+def data_to_mongo2(df, collection):
+    df = load_mol_columns(df)
+    df_to_collection_via_pymongo(df, collection)
+
 
 if __name__ == '__main__':
     db.connect('molecules')
