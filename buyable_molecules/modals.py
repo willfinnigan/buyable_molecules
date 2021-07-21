@@ -14,6 +14,15 @@ class BuildingBlock(db.DynamicDocument):
 
     meta = {'indexes': ['smiles']}
 
+class Emolecules(db.DynamicDocument):
+    smiles = db.StringField()
+    rdmol = db.BinaryField()
+    index = db.StringField()
+    fingerprints = db.DictField()
+    emol_id = db.StringField()
+
+    meta = {'indexes': ['smiles']}
+
 
 
 
