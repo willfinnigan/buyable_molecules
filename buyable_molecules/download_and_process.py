@@ -11,7 +11,7 @@ from rdkit import RDLogger
 lg = RDLogger.logger()
 lg.setLevel(RDLogger.ERROR)
 
-from buyable_molecules import functions
+from buyable_molecules import rdkit_pandas_functions
 
 def load_data(path, cols, sep, header=None):
     print(f'Load path: {path}')
@@ -23,11 +23,11 @@ def load_data(path, cols, sep, header=None):
 def process_df_smiles(df_smiles):
     print('Data loaded - processing smiles..')
     print(f"Initial number of rows = {len(df_smiles.index)}")
-    df_smiles["SMILES"] = df_smiles["SMILES"].apply(functions.convert_to_rdkit)
+    df_smiles["SMILES"] = df_smiles["SMILES"].apply(rdkit_pandas_functions.convert_to_rdkit)
     df_smiles["SMILES"].replace('', np.nan, inplace=True)
     df_smiles = df_smiles.dropna()
     df_smiles = df_smiles.drop_duplicates()
-    df_smiles = functions.remove_duplicate_smiles(df_smiles)
+    df_smiles = rdkit_pandas_functions.remove_duplicate_smiles(df_smiles)
     print(f"Number of rows after processing = {len(df_smiles.index)}")
 
     return df_smiles
