@@ -85,7 +85,7 @@ def df_to_collection_via_pymongo(df, collection):
         to_insert.append(mol_doc)
 
     collection.insert_many(to_insert)
-    to_insert= None
+    to_insert = None
     mol_doc = None
     gc.collect()
     return
