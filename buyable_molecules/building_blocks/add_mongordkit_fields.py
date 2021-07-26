@@ -37,3 +37,5 @@ if __name__ == '__main__':
     print('\n')
     print('similaritySearchAggregate: {}'.format(results2))
 
+    substructure.AddPatternFingerprints(bb_collection)
+
