@@ -62,6 +62,7 @@ if __name__ == '__main__':
     #connection.execute("CREATE VIRTUAL TABLE str_idx_buyable_molecule " +
      #                  "USING rdtree(id, fp bits(2048))")
 
+
     c = connection.cursor()
     c.execute(
         "INSERT INTO str_idx_buyable_molecule(id, fp) " +

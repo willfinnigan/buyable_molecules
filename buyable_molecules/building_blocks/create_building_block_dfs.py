@@ -39,18 +39,17 @@ if __name__ == "__main__":
     # emolecules_url = 'https://downloads.emolecules.com/free/2021-07-01/version.smi.gz'
     # emols links: https://reaxys.emolecules.com/cgi-bin/more?vid=477088
 
-    #download_and_process(mcule_url, ["SMILES", "mcule_id"], None, '\t', f'{save_folder}/mcule.csv', download=True, unzip=True)
-    download_and_process(z_sigma_url, ["SMILES", "sigma_id"], None, ' ', f'{save_folder}/sigma.csv', download=True, unzip=False)
-
     '''
+    download_and_process(mcule_url, ["SMILES", "mcule_id"], None, '\t', f'{save_folder}/mcule.csv', download=True, unzip=True)
+    download_and_process(z_sigma_url, ["SMILES", "sigma_id"], None, ' ', f'{save_folder}/sigma.csv', download=True, unzip=False)
     download_and_process(z_molport_url, ["SMILES", "molport_id"], None, '\t', f'{save_folder}/molport.csv', download=True, unzip=False)
     download_and_process(z_bb_instock_url, ["SMILES", "zinc_id", 'data_type', 'supplier', 'code'],
                          None, '\t', f'{save_folder}/zinc.csv', download=True, unzip=False)
-
+    '''
     merged_df = create_merged_df([f'{save_folder}/mcule.csv',
                                   f'{save_folder}/sigma.csv',
                                   f'{save_folder}/molport.csv',
                                   f'{save_folder}/zinc.csv'])
 
-    merged_df.to_csv(f"{save_folder}/final")
-    '''
+    merged_df = merged_df[['SMILES', 'mcule_id', 'sigma_id', 'molport_id', 'zinc_id']]
+    merged_df.to_csv(f"{save_folder}/final/final.csv")

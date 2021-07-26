@@ -68,3 +68,4 @@ def SubSearch(pattern, mol_collection, chirality=False):
         if rdmol.HasSubstructMatch(pattern, useChirality=chirality):
             results.append(molDoc['index'])
     return results
+
