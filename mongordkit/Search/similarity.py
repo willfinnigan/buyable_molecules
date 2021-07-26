@@ -4,6 +4,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from mongordkit import Database
 
+import time
 import numpy as np
 import functools
 
@@ -55,6 +56,7 @@ def AddMorganFingerprints(mol_collection, count_collection):
     :param radius: Radius of the desired Morgan fingerprints. Defaults to 2.
     :param length: NBits in desired Morgan fingerprints. Defaults to 2048.
     """
+    print("Adding fingerprints to molecules...")
     for m in mol_collection.find(batch_size=DEFAULT_BATCH_SIZE):
         bit_vector = list((AllChem.GetMorganFingerprintAsBitVect(Chem.Mol(m['rdmol']),
                                                                  DEFAULT_MORGAN_RADIUS,
@@ -62,17 +64,94 @@ def AddMorganFingerprints(mol_collection, count_collection):
         count = len(bit_vector)
         mol_collection.update_one({'_id': m['_id']}, {'$set': {'fingerprints.morgan_fp': {'bits': bit_vector,
                                                                            'count': count}}})
+    print("..done")
+    print("Creating counts dict...")
     counts = {}
     for m in mol_collection.find(batch_size=DEFAULT_BATCH_SIZE):
         for bit in m['fingerprints']['morgan_fp']['bits']:
             counts[bit] = counts.get(bit, 0) + 1
+    print("..done")
+    print("Sending counts dict to mongo...")
     for k, v in counts.items():
         count_collection.insert_one({'_id': k, 'count': v})
+
+    print("..done")
+    print("Creating indexes")
     a = count_collection.find_one()
     mol_collection.create_index('fingerprints.morgan_fp.bits')
     mol_collection.create_index('fingerprints.morgan_fp.count')
+    print("..done")
     return None
 
+
+def add_fingerprints(mol_collection):
+    print("Adding fingerprints to molecules...")
+    t0 = time.time()
+    total_records = mol_collection.count_documents({})
+    for i, m in enumerate(mol_collection.find(batch_size=DEFAULT_BATCH_SIZE)):
+        bit_vector = list((AllChem.GetMorganFingerprintAsBitVect(Chem.Mol(m['rdmol']),
+                                                                 DEFAULT_MORGAN_RADIUS,
+                                                                 nBits=DEFAULT_MORGAN_LEN).GetOnBits()))
+        count = len(bit_vector)
+        mol_collection.update_one({'_id': m['_id']}, {'$set': {'fingerprints.morgan_fp': {'bits': bit_vector,
+                                                                                          'count': count}}})
+        if i % 10000 == 0 and i != 0:
+            elapsed = round(time.time()-t0, 1)
+            estimated_total_time = (elapsed / i) * total_records
+            time_remaining = estimated_total_time - elapsed
+            print(f"{i} added in {elapsed} seconds - estimated time remaining = {round(time_remaining / 60, 2)} mins")
+
+    print("..done")
+    return None
+
+
+def create_counts(mol_collection, count_collection):
+    count_collection.drop()
+
+    print("Creating counts ...")
+    total_records = mol_collection.count_documents({})
+    t0 = time.time()
+    counts = {}
+    for i, m in enumerate(mol_collection.find(batch_size=DEFAULT_BATCH_SIZE)):
+        for bit in m['fingerprints']['morgan_fp']['bits']:
+            counts[bit] = counts.get(bit, 0) + 1
+
+        if i % 10000 == 0 and i != 0:
+            elapsed = round(time.time()-t0, 1)
+            estimated_total_time = (elapsed / i) * total_records
+            time_remaining = estimated_total_time - elapsed
+            print(f"{i} counts added in {elapsed} seconds - estimated time remaining = {round(time_remaining / 60, 2)} mins")
+
+    print("..done")
+    print("Sending counts dict to mongo...")
+    for k, v in counts.items():
+        count_collection.insert_one({'_id': k, 'count': v})
+
+    print("..done")
+    a = count_collection.find_one()
+    return None
+
+
+def create_indexes(mol_collection):
+    print("Creating indexes")
+    mol_collection.create_index('fingerprints.morgan_fp.bits')
+    mol_collection.create_index('fingerprints.morgan_fp.count')
+    print("..done")
+    return None
+
+def AddMorganFingerprints_new(mol_collection, count_collection, fp_key='morgan_fp'):
+    """
+    Adds Morgan fingerprint bit vectors and counts with RADIUS and
+    LENGTH bits to all documents in MOL_COLLECTION. Inserts bit frequency information
+    into COUNT_COLLECTION.
+    :param mol_collection: A MongoDB collection storing molecules.
+    :param count_collection: A MongoDB collection storing frequency of bits.
+    :param radius: Radius of the desired Morgan fingerprints. Defaults to 2.
+    :param length: NBits in desired Morgan fingerprints. Defaults to 2048.
+    """
+    add_fingerprints(mol_collection)
+    create_counts(mol_collection, count_collection)
+    return None
 
 def SimSearch(mol, mol_collection, count_collection=None, threshold=DEFAULT_THRESHOLD):
     """
@@ -110,8 +189,7 @@ def SimSearch(mol, mol_collection, count_collection=None, threshold=DEFAULT_THRE
                                  'fingerprints.morgan_fp.bits': {'$in': req_common_bits}}):
         tanimoto = calc_tanimoto(qfp, mol['fingerprints']['morgan_fp']['bits'])
         if tanimoto >= threshold:
-            results.append([tanimoto] +
-                       [str(mol["index"])])
+            results.append([tanimoto] + [str(mol["index"])] + [str(mol["smiles"])])
     return results
 
 
@@ -131,7 +209,7 @@ def SimSearchAggregate(mol, mol_collection, count_collection=None, threshold=DEF
     if threshold == 0:
         for mol in mol_collection.find():
             tanimoto = [str(calc_tanimoto(qfp, mol['fingerprints']['morgan_fp']['bits']))]
-            results.append(tanimoto + [str(mol['index'])])
+            results.append(tanimoto + [str(mol['index'])] + [str(mol['smiles'])])
         return results
     qfp_count = len(qfp)
     fp_min = int(math.ceil((threshold * qfp_count)))
@@ -153,13 +231,13 @@ def SimSearchAggregate(mol, mol_collection, count_collection=None, threshold=DEF
                                     'in': {'$divide': ['$$common', {'$add': [qfp_count, {'$subtract': ['$fingerprints.morgan_fp.count', '$$common']}]}]}
                                     }
                            },
-              'index': 1
+              'index': 1, 'smiles': 1
             }
          },
         {'$match': {'tanimoto': {'$gte': threshold}}}
     ]
     response = mol_collection.aggregate(aggregate)
-    return [[r['tanimoto'], r['index']] for r in response]
+    return [[r['tanimoto'], r['index'], r['smiles']] for r in response]
 
 
 def AddRandPermutations(perm_collection, len=DEFAULT_PERM_LEN, num=DEFAULT_PERM_N):

@@ -15,7 +15,6 @@ if __name__ == '__main__':
     print(round(t1 - t0, 3))
 
 
-
     client = pymongo.MongoClient()
     database = client['molecules']
     collection = database['building_block']
@@ -54,3 +53,14 @@ if __name__ == '__main__':
     t1 = time.time()
     print(docs)
     print(round(t1 - t0, 10))
+
+    t0 = time.time()
+    docs = collection.find(batch_size=100)
+    t1 = time.time()
+    print(round(t1 - t0, 10))
+
+    t0 = time.time()
+    total_records = collection.count_documents({})
+    t1 = time.time()
+    print(round(t1 - t0, 10))
+    print(total_records)

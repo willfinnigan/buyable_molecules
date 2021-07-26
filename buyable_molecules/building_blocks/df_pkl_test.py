@@ -65,11 +65,37 @@ def create_mol_df_hdfs(num_splits, folder=f"{bb_folder}/final/final_split"):
                                                                           'zinc_id': str})
         df['mol'] = df['SMILES'].apply(create_mol_col)
         df.dropna(subset=['mol'], inplace=True)
-        df.to_hdf(f"{folder}/hdf/split_{i}.h5", key='df', mode='w')
+
+        df.to_hdf(f"{folder}/hdf/split_{i}.h5", key='df', mode='w', format='table')
+
+def create_mol_df_para(num_splits, folder=f"{bb_folder}/final/final_split"):
+    for i in range(num_splits):
+        print(i)
+        df = pd.read_csv(f"{folder}/split_{i}.csv", index_col=0, dtype={'SMILES': 'string',
+                                                                          'molport_id': 'string',
+                                                                          'mcule_id': 'string',
+                                                                          'sigma_id': 'string',
+                                                                          'zinc_id': 'string'})
+
+        df['mol'] = df['SMILES'].apply(create_mol_col)
+        df.dropna(subset=['mol'], inplace=True)
+
+        df.to_parquet(f"{folder}/paraquet/split_{i}")
 
 
 if __name__ == "__main__":
     split = 200
+    df = pd.read_csv(final_building_block_df_path, index_col=0, dtype={'SMILES': "string",
+                                                                       'molport_id': "string",
+                                                                       'mcule_id': "string",
+                                                                       'sigma_id': "string",
+                                                                       'zinc_id': "string"})
+    print(df.head())
+    print(df.info())
+    create_mol_df_para(split, folder=f"{bb_folder}/final/final_split")
+
+    #df = dd.read_hdf(f"{bb_folder}/final/final_split/hdf/split_*.h5", 'df')
+    #print(df.head())
 
     """
     df = pd.read_csv(final_building_block_df_path, dtype={'SMILES': str, 'molport_id': str, 'mcule_id': str, 'sigma_id': str, 'zinc_id': str})
@@ -83,8 +109,8 @@ if __name__ == "__main__":
 
     #df = pd.read_hdf(f"{bb_folder}/final/final_split/hdf/split_0.h5", 'df')
 
-    df = load_and_combine(split)
-    print(df.head())
+    #df = load_and_combine(split)
+
 
     #df.to_hdf(f'{bb_folder}/final/final_w_mols.hdf', key='df')
 
