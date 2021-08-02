@@ -3,6 +3,8 @@ import time
 
 
 def create_mol_table(conn, cursor, table='building_blocks', mols='mols', id='id'):
+    cursor.execute(f'drop table if exists {mols}')
+
     cmd = f"select * into {mols} from (select id,mol_from_smiles(smiles::cstring) m from {table}) tmp where m is not null;"
     cursor.execute(cmd)
     conn.commit()

@@ -1,5 +1,6 @@
 import time
 from buyable_molecules.create_postgres_db.funcs.db_setup import connect_to_db
+from rdkit import DataStructs
 
 def substructure_search(smarts, vendors=[], cursor=None, table='building_blocks', mols='mols', fps='fps', print_cmd=False):
     if cursor is None:
@@ -38,14 +39,7 @@ def substructure_search(smarts, vendors=[], cursor=None, table='building_blocks'
 
 if __name__ == "__main__":
 
-    from rdkit import DataStructs
-    from rdkit import Chem
-    from rdkit.Chem import rdFingerprintGenerator
-
-    conn = connect_to_db()
-    cursor = conn.cursor()
-
-    result = substructure_search(cursor, 'CC(=O)[OH]', vendors=['sigma'])
+    result = substructure_search('CC(=O)[OH]', vendors=['sigma'])
     print(result)
 
 
