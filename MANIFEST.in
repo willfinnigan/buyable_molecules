@@ -1,0 +1,2 @@
+recursive-include buyable_molecules/ *
+

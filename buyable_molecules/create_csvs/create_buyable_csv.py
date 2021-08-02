@@ -1,4 +1,4 @@
-from buyable_molecules.create_csvs.funcs.download_and_process import download_and_process
+from buyable_molecules.create_csvs.funcs.download_and_process import download_and_process, remove_file
 from buyable_molecules.create_csvs.funcs import dataframe_functions
 from pathlib import Path
 from buyable_molecules import urls
@@ -16,6 +16,12 @@ def create_buyable_csv():
 
     merged_df = merged_df[['SMILES', 'mcule_id', 'sigma_id', 'molport_id', 'zinc_id']]
     merged_df.to_csv(f"{SAVE_FOLDER}/final.csv")
+
+    remove_file(mcule)
+    remove_file(sigma)
+    remove_file(molport)
+    remove_file(zinc)
+
 
 if __name__ == "__main__":
     print('creating buyable csv..')
