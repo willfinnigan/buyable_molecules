@@ -30,11 +30,12 @@ def substructure_search(smarts, vendors=[], cursor=None, table='building_blocks'
     cursor.execute(cmd)
     results = cursor.fetchall()
 
+    new_results = []
     for i, result in enumerate(results):
         fp = DataStructs.CreateFromBinaryText(bytes(result[-1]))
-        results[i][-1] = fp
+        new_results.append(list(result[0:-1]) + [fp])
 
-    return results
+    return new_results
 
 
 if __name__ == "__main__":

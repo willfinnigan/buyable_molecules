@@ -1,4 +1,5 @@
 
+from buyable_molecules.create_postgres_db.funcs.db_setup import connect_to_db
 
 def smiles_lookup(smiles, cursor, table='building_blocks', vendors=[], print_cmd=False):
     cmd = f"select * from {table} where smiles='{smiles}'"
@@ -37,3 +38,10 @@ def test_smi_fp(cursor, smi, table='building_blocks', fps='fps'):
     cursor.execute(cmd)
     result = cursor.fetchall()
     return result
+
+if __name__ == '__main__':
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    result = smiles_lookup('CCCCO', cursor)
+    print(result)
+
