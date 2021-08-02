@@ -1,10 +1,7 @@
-from pathlib import Path
 import pandas as pd
 from buyable_molecules.create_postgres_db.funcs import db_setup, create_building_blocks_table, create_mol_and_fp_tables
 from buyable_molecules.create_csvs.funcs.download_and_process import remove_file
-
-
-SAVE_FOLDER = str(Path(__file__).parents[1]) + '/save_folder'
+from buyable_molecules.create_csvs.create_buyable_csv import COLUMNS, SAVE_FOLDER
 
 def create_db():
     print("creating db if it does not already exist")
@@ -16,7 +13,8 @@ def create_db():
 
 def create_building_blocks(remove_csv_after=True):
     print('Creating building_blocks table from df - this will take some time..')
-    df = pd.read_csv(f"{SAVE_FOLDER}/final.csv", index_col=0, dtype={'SMILES': str, 'molport_id': str, 'mcule_id': str, 'sigma_id': str, 'zinc_id': str})
+    dtypes = {k: str for k in COLUMNS}
+    df = pd.read_csv(f"{SAVE_FOLDER}/final.csv", index_col=0, dtype=dtypes)
     df.rename(columns={"SMILES": "smiles"}, inplace=True)
     print(df.head())
 
