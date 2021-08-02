@@ -1,4 +1,3 @@
-
 from buyable_molecules.create_postgres_db.funcs.db_setup import connect_to_db
 
 def smiles_lookup(smiles, cursor, table='building_blocks', vendors=[], print_cmd=False):

@@ -1,0 +1,6 @@
+psycopg2
+sqlalchemy
+rdkit
+pandas
+numpy
+pathlib

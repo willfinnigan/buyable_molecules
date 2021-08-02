@@ -1,6 +1,3 @@
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-from io import StringIO
 import sqlalchemy
 
 def sqlalchemy_data_to_table(df, table='building_blocks'):
