@@ -7,9 +7,9 @@ This module requires a postgres database running on the default port, with the r
 
 edit urls.py to change to files that are downloaded (or if they go out of date)
 
-Run create_db() to create the database (will take a long to time to run)  
+Run create_db.py to create the database (will take a long to time to run)  
 
-Run substructure_search(smarts, vendors=[]) to perform a substructure search. Optionally filter by vendor.
+Run buyable_molecules.substructure_search(smarts, vendors=[]) to perform a substructure search. Optionally filter by vendor.
 
 Rdkit fingerprints are returned with the substructure search.
 
