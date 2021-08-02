@@ -1,7 +1,6 @@
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-from io import StringIO
-import sqlalchemy
+from buyable_molecules.config import POSTGRES_PASSWORD, USER, HOST, PORT, DB_NAME
 
 def create_db(conn_string, db_name):
     conn = psycopg2.connect(conn_string)
@@ -21,11 +20,11 @@ def install_rd_extension(conn, cursor):
 def connect_to_db():
     try:
         conn = psycopg2.connect(
-            "user='postgres' dbname='molecules' host='0.0.0.0' password='rbc_postgres_1' port='5432'")
+            f"user='{USER}' dbname='{DB_NAME}' host='{HOST}' password='{POSTGRES_PASSWORD}' port='{PORT}'")
     except:
-        create_db("user='postgres'host='0.0.0.0' password='rbc_postgres_1' port='5432'", 'molecules')
+        create_db(f"user='{USER}' host='{HOST}' password='{POSTGRES_PASSWORD}' port='{PORT}'", DB_NAME)
         conn = psycopg2.connect(
-            "user='postgres' dbname='molecules' host='0.0.0.0' password='rbc_postgres_1' port='5432'")
+            f"user='{USER}' dbname='{DB_NAME}' host='{HOST}' password='{POSTGRES_PASSWORD}' port='{PORT}'")
 
     cursor = conn.cursor()
     install_rd_extension(conn, cursor)
