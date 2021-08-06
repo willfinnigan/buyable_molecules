@@ -1,4 +1,6 @@
 from buyable_molecules.create_postgres_db.funcs.db_setup import connect_to_db
+from buyable_molecules.urls import VENDORS
+
 
 def smiles_lookup(smiles, cursor, table='building_blocks', vendors=[], print_cmd=False):
     cmd = f"select * from {table} where smiles='{smiles}'"
@@ -38,9 +40,23 @@ def test_smi_fp(cursor, smi, table='building_blocks', fps='fps'):
     result = cursor.fetchall()
     return result
 
+def vendor_rows(cursor, vendor, table='building_blocks'):
+    cmd = f"select count(*) from {table} where {vendor}_id is not NULL"
+    cursor.execute(cmd)
+    result = cursor.fetchone()
+
+    return result
+
+def get_vendor_counts(cursor, vendors=VENDORS, table='building_blocks'):
+    for v in VENDORS:
+        num = vendor_rows(cursor, v)
+        print(f"{v} - {num[0]}")
+
 if __name__ == '__main__':
     conn = connect_to_db()
     cursor = conn.cursor()
     result = smiles_lookup('CCCCO', cursor)
     print(result)
+
+    get_vendor_counts(cursor)
 

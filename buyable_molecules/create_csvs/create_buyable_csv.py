@@ -1,4 +1,4 @@
-from buyable_molecules.create_csvs.funcs.download_and_process import download_and_process, remove_file
+from buyable_molecules.create_csvs.funcs.download_and_process import download_and_process, download_and_process_lifechem, remove_file
 from buyable_molecules.create_csvs.funcs import dataframe_functions
 from pathlib import Path
 from buyable_molecules import urls
@@ -17,7 +17,13 @@ def create_buyable_csv():
     fluro = download_and_process(urls.FLUROCHEM_URL, ["SMILES", "flurochem_id"], None, ' ', f'{SAVE_FOLDER}/fluro.csv',
                                   download=True, unzip=False)
 
-    merged_df = dataframe_functions.create_merged_df([mcule, sigma, molport, zinc, apollo, fluro])
+    alfa = download_and_process(urls.ALFA_URL, ["SMILES", "alfa_id"], None, ' ', f'{SAVE_FOLDER}/alfa.csv',
+                                  download=True, unzip=False)
+
+    lifechem = download_and_process_lifechem(urls.LIFECHEM_URL, f'{SAVE_FOLDER}/lifechem.csv')
+
+
+    merged_df = dataframe_functions.create_merged_df([mcule, sigma, molport, zinc, apollo, fluro, alfa, lifechem])
 
     merged_df = merged_df[COLUMNS]
     merged_df.to_csv(f"{SAVE_FOLDER}/final.csv")
@@ -28,10 +34,15 @@ def create_buyable_csv():
     remove_file(zinc)
     remove_file(apollo)
     remove_file(fluro)
+    remove_file(alfa)
+    remove_file(lifechem)
 
 if __name__ == "__main__":
-    print('creating buyable csv..')
-    create_buyable_csv()
+
+    #print('creating buyable csv..')
+    #create_buyable_csv()
     print('..done')
+
+
 
 
